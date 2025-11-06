@@ -53,7 +53,7 @@ function openIA(service: string) {
         <span class="nav-text">Inicio</span>
       </router-link>
 
-      <router-link to="/dashboard/sentimientos" class="nav-link" exact-active-class="nav-active">
+      <router-link to="/sentimientos" class="nav-link" exact-active-class="nav-active">
         <i class="bi bi-emoji-smile-fill"></i>
         <span class="nav-text">Análisis de Sentimientos</span>
       </router-link>
