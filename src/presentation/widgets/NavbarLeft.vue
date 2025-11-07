@@ -23,7 +23,6 @@ function toggleSidebar() {
   isCollapsed.value = !isCollapsed.value
 }
 
-
 /*
 function openIA(service: string) {
   const urls: Record<string, string> = {

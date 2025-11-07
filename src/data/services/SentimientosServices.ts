@@ -13,12 +13,14 @@ export default class YoutubeService {
     }
   }
 
-  static async analizarVideo(url: string): Promise<SentimientosModel> {
+  // 🎯 CORRECCIÓN 1: Aceptar el parámetro maxComments
+  static async analizarVideo(url: string, maxComments: number): Promise<SentimientosModel> {
     try {
       const response = await fetch(`${ApiConection.BASE_URL}/analizar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
+        // 🎯 CORRECCIÓN 2: Incluir max_comments en el body
+        body: JSON.stringify({ url, max_comments: maxComments }),
       })
 
       if (!response.ok) {

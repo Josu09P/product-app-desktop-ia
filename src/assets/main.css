@@ -1,35 +1,37 @@
 @import './base.css';
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+/* =========================================
+  CSS FOR BODY
+========================================== */
+
+body {
+  background: var(--background-color) !important;
+  color: var(--text-color);
+  font-family: 'Roboto', sans-serif;
+  transition: background 0.3s, color 0.3s;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+/* =========================================
+  CSS FOR TOASTIFY
+========================================== */
+
+.toast-glass {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: var(--text-color) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+.toast-glass.success {
+  border-left: 4px solid #28a745;
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+.toast-glass.error {
+  border-left: 4px solid #dc3545;
 }
