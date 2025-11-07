@@ -25,6 +25,11 @@ const router = createRouter({
       name: 'sentimientos',
       component: SentimientosView,
     },
+    {
+      path: '/rl-multiple',
+      name: 'rl-multiple',
+      component: () => import('@/presentation/views/RLMultipleView.vue'),
+    },
   ],
 })
 

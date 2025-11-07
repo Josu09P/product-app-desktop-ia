@@ -40,9 +40,9 @@ function openIA(service: string) {
   <div id="sidebar" class="sidebar" :class="{ collapsed: isCollapsed }">
     <!-- Logo -->
     <div class="logo-icon text-center d-flex align-items-center justify-content-center gap-2">
-      <img src="@/assets/img/logo-app.png" v-if="isCollapsed" class="logo-app" alt="Nubri logo"
+      <img src="@/assets/img/logo.png" v-if="isCollapsed" class="logo-app" alt="Nubri logo"
         style="border-radius: 1.5rem;" />
-      <span v-else class="logo-text">Matrix AI</span>
+      <span v-else class="logo-text" color="green">AquaMind</span>
     </div>
 
     <!-- Navegación -->
@@ -57,12 +57,12 @@ function openIA(service: string) {
         <span class="nav-text">Análisis de Sentimientos</span>
       </router-link>
 
-      <router-link to="/dashboard/linear-regression-simple" class="nav-link" exact-active-class="nav-active">
+      <router-link to="/dash-dash" class="nav-link" exact-active-class="nav-active">
         <i class="bi bi-graph-up"></i>
         <span class="nav-text">Regresión Lineal Simple</span>
       </router-link>
 
-      <router-link to="/dashboard/linear-regression-multiple" class="nav-link" exact-active-class="nav-active">
+      <router-link to="/rl-multiple" class="nav-link" exact-active-class="nav-active">
         <i class="bi bi-graph-up-arrow"></i>
         <span class="nav-text">Regresión Lineal Múltiple</span>
       </router-link>

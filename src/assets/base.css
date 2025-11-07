@@ -5,5 +5,7 @@
   --color-success: #28a745;
   --color-danger: #dc3545;
   --color-warning: #f6c23e;
-  --background-color: #f4f4f4;
+  --background-color: white;
+  --shadow-color: rgba(49, 49, 49, 0.438);
+  --card-bg-color: rgba(240, 240, 240, 0.712);
 }

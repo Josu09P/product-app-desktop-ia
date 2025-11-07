@@ -181,7 +181,7 @@ const formatMeta = (label: string, value: string | number | boolean) => {
         <p class="mt-2 text-muted">Analizando el video, por favor espera...</p>
       </div>
 
-      <div v-if="result" class="card border-0 rounded-4 p-lg-5 p-4 mt-4 shadow-sm">
+      <div v-if="result" class="card border-0 rounded-4 p-lg-5 p-4 mt-4 card-custom-shadow">
         <div class="row g-5">
           <div class="col-12 col-lg-5">
             <div class="ratio ratio-16x9 mb-4">
@@ -264,7 +264,6 @@ const formatMeta = (label: string, value: string | number | boolean) => {
             </div>
           </div>
         </div>
-
         <p class="text-muted mt-3 small">
           Frecuencia de las palabras más comunes en los comentarios (excluyendo "stopwords"), visualizada en un gráfico
           de torta.
