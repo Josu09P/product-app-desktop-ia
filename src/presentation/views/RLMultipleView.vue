@@ -5,6 +5,10 @@ import TitlePage from "../widgets/TitlePage.vue"
 import PostRLMultipleUseCase from "@/domain/usecase/RLMultipleUseCase/PostRLMultipleUseCase"
 import type { RLMultipleResult, DataPoint } from "@/domain/models/RLMultipleModel"
 import { showToast } from '@/utils/toast'
+import ResidualsScatterPlot from "@/presentation/widgets/sections/ResidualsScatterPlot.vue"
+import ResidualsHistogram from "../widgets/sections/ResidualsHistogram.vue"
+import ResidualsQQPlot from "../widgets/sections/ResidualsQQPlot.vue"
+import ScatterRegressionPlot from "../widgets/sections/ScatterRegressionPlot.vue"
 
 // --- ESTADO GLOBAL DE DATOS ---
 const loading = ref(false)
@@ -296,21 +300,21 @@ function removeFromIndependent(variable: string) {
         <!-- BOTÓN DE ANÁLISIS -->
         <button class="btn btn-primary px-4 fw-bold shadow-sm" @click="analizar"
           :disabled="loading || processedDataPoints.length < 3">
-          {{ loading ? 'Calculando...' : 'Ejecutar Regresión' }}
+          {{ loading ? 'Calculando...' : 'Ejecutar' }}
         </button>
       </div>
 
       <!-- SECCIÓN DE CONFIGURACIÓN Y DATOS DE ENTRADA -->
-      <div class="card border-0 rounded-4 p-lg-5 p-4 mt-4 card-custom-shadow">
-        <h4 class="fw-bold text-dark mb-4">1. Carga y Configuración de Variables</h4>
+      <div class="card border-1 rounded-4 p-lg-5 p-4 mt-4 card-custom-shadow">
+        <h4 class="fw-bold text-dark mb-4">Carga y Configuración de Variables</h4>
 
         <!-- Carga de Archivo CSV -->
         <div class="mb-5">
-          <h5 class="fw-semibold text-primary mb-3">Paso 1: Importar Data (.csv)</h5>
+          <p class="text-muted mb-3 fw-bold" style="font-size: 13px;">Paso 1: Importar Data (.csv)</p>
           <input type="file" @change="handleFileUpload" class="form-control" accept=".csv, text/csv" />
           <p v-if="rawDataset.length > 0" class="mt-2 small text-muted">
-            Archivo cargado con éxito. Filas válidas: **{{ rawDataset.length }}**. Columnas: **{{
-              availableColumns.length }}**.
+            Archivo cargado con éxito. Filas válidas: <strong>{{ rawDataset.length }}</strong>. Columnas: <strong>{{
+              availableColumns.length }}.</strong>
             <span v-if="rawDataset.length === 0" class="text-danger fw-bold">Verifica si el archivo usa comas (,) o
               punto y coma (;) como separador de columnas, o si los decimales usan comas (,) en lugar de puntos
               (.).</span>
@@ -319,21 +323,21 @@ function removeFromIndependent(variable: string) {
 
         <!-- Panel de Selección de Variables (Estilo JASP/Jamovi) -->
         <div v-if="availableColumns.length > 0" class="row g-4 align-items-stretch">
-          <h5 class="fw-semibold text-primary mt-3 mb-3">Paso 2: Seleccionar Variables</h5>
+          <p class="text-muted mt-3 fw-bold mb-1" style="font-size: 13px;">Paso 2: Seleccionar Variables</p>
 
           <!-- Lista de Variables Disponibles -->
           <div class="col-12 col-lg-4">
-            <div class="card h-100 p-3 shadow-sm border-secondary">
-              <h6 class="fw-bold text-secondary mb-3">Variables Disponibles ({{ remainingColumns.length }})</h6>
+            <div class="card h-100 p-3 border-1">
+              <p class="fw-bold text-secondary mb-3">Variables Disponibles: {{ remainingColumns.length }}</p>
               <ul class="list-group list-group-flush overflow-auto" style="max-height: 300px;">
                 <li v-for="col in remainingColumns" :key="col"
                   class="list-group-item d-flex justify-content-between align-items-center p-2">
                   <span class="text-truncate">{{ col }}</span>
                   <div>
                     <button @click="moveToDependent(col)" class="btn btn-sm btn-outline-info me-1"
-                      title="Mover a Dependiente">Y</button>
+                      style="border-radius: 1.5rem;" title="Mover a Dependiente">Y</button>
                     <button @click="addToIndependent(col)" class="btn btn-sm btn-outline-success"
-                      title="Mover a Independientes">X</button>
+                      style="border-radius: 1.5rem;" title="Mover a Independientes">X</button>
                   </div>
                 </li>
               </ul>
@@ -345,39 +349,38 @@ function removeFromIndependent(variable: string) {
             <div class="d-flex flex-column h-100">
 
               <!-- Variable Dependiente (Y) -->
-              <div class="card mb-3 p-3 shadow-sm border-info">
-                <h6 class="fw-bold text-info mb-2">Variable Dependiente (Y)</h6>
+              <div class="card mb-3 p-3 border-1">
+                <h6 class="fw-bold text-info mb-2">Variable Dependiente - Y</h6>
                 <div v-if="dependentVariable"
                   class="list-group-item d-flex justify-content-between align-items-center bg-light p-2 rounded">
                   <span class="fw-bold">{{ dependentVariable }}</span>
                   <button @click="dependentVariable = null" class="btn btn-sm btn-outline-danger"
-                    title="Quitar">&times;</button>
+                    style="border-radius: 1.5rem;" title="Quitar"><i class="bi bi-trash"></i></button>
                 </div>
-                <p v-else class="text-muted small mb-0">Arrastra o selecciona una variable para Y.</p>
+                <p v-else class="text-muted small mb-0">Selecciona una variable</p>
               </div>
 
               <!-- Variables Independientes (X) -->
-              <div class="card flex-grow-1 p-3 shadow-sm border-success">
-                <h6 class="fw-bold text-success mb-2">Variables Independientes (X) ({{ independentVariables.length }})
+              <div class="card flex-grow-1 p-3 border-1">
+                <h6 class="fw-bold text-success mb-2">Variables Independientes - X - {{ independentVariables.length }}
                 </h6>
                 <ul v-if="independentVariables.length > 0" class="list-group list-group-flush">
                   <li v-for="col in independentVariables" :key="col"
                     class="list-group-item d-flex justify-content-between align-items-center p-2">
                     <span class="text-truncate">{{ col }}</span>
-                    <button @click="removeFromIndependent(col)" class="btn btn-sm btn-outline-danger"
-                      title="Quitar">&times;</button>
+                    <button @click="removeFromIndependent(col)" class="btn btn-sm btn-outline-danger" title="Quitar"
+                      style="border-radius: 1.5rem;"><i class="bi bi-trash"></i></button>
                   </li>
                 </ul>
-                <p v-else class="text-muted small mb-0">Arrastra o selecciona variables para X.</p>
+                <p v-else class="text-muted small mb-0">Selecciona las variables</p>
               </div>
-
             </div>
           </div>
         </div>
 
         <!-- Muestra el número de datos procesados -->
         <p v-if="availableColumns.length > 0" class="mt-4 small text-end text-muted">
-          **{{ processedDataPoints.length }}** puntos de datos listos para el análisis.
+          <strong>{{ processedDataPoints.length }}</strong> puntos de datos listos para el análisis.
         </p>
 
       </div>
@@ -390,19 +393,19 @@ function removeFromIndependent(variable: string) {
         <p class="mt-2 text-muted">Calculando el modelo de regresión...</p>
       </div>
 
-      <div v-if="result" class="card border-0 rounded-4 p-lg-5 p-4 mt-4 card-custom-shadow">
-        <h4 class="fw-bold text-success mb-4">2. Resultados del Análisis</h4>
+      <div v-if="result" class="card border-1 rounded-4 p-lg-5 p-4 mt-4 card-custom-shadow">
+        <h4 class="fw-bold mb-4">Resultados del Análisis</h4>
 
         <!-- RESUMEN CLAVE -->
         <div class="row mb-5 g-4">
 
           <!-- Ecuación -->
           <div class="col-12 col-lg-8">
-            <div class="card bg-light border-0 p-4 h-100">
-              <h5 class="card-title text-primary fw-bold">Ecuación de Regresión Estimada</h5>
+            <div class="card bg-light border-1 p-4 h-100">
+              <p class="card-title text-muted fw-bold" style="font-size: 13px;">Ecuación de Regresión Estimada</p>
               <p class="card-text fs-5 font-monospace text-dark">{{ result.ecuacion }}</p>
               <p class="small text-muted mt-2">
-                La ecuación permite predecir la variable Y (**{{ dependentVariable }}**)
+                La ecuación permite predecir la variable Y <strong>{{ dependentVariable }}</strong>
                 en función de las variables X ingresadas.
               </p>
             </div>
@@ -410,7 +413,7 @@ function removeFromIndependent(variable: string) {
 
           <!-- R-Cuadrado -->
           <div class="col-12 col-lg-4">
-            <div class="card border-0 bg-info bg-opacity-10 p-4 text-center h-100 d-flex justify-content-center">
+            <div class="card border-1 bg-info bg-opacity-10 p-4 text-center h-100 d-flex justify-content-center">
               <h5 class="card-title text-info fw-bold mb-0">R-Cuadrado (R²)</h5>
               <p class="display-4 fw-bolder text-info mb-0">{{ result.r2.toFixed(4) }}</p>
               <p class="small text-muted mt-1">
@@ -422,7 +425,7 @@ function removeFromIndependent(variable: string) {
         </div>
 
         <!-- TABLA DE COEFICIENTES -->
-        <h5 class="fw-semibold text-primary mb-3">Tabla de Coeficientes</h5>
+        <p class="fw-semibold text-muted mb-3" style="font-size: 13px;">Tabla de Coeficientes</p>
         <div class="table-responsive mb-5">
           <!-- ... (Resto de la tabla de coeficientes se mantiene, pero usa result.nombres_variables) ... -->
           <table class="table table-bordered table-striped table-hover small">
@@ -445,30 +448,82 @@ function removeFromIndependent(variable: string) {
           </table>
         </div>
 
-        <!-- TABLA DE DETALLE DE DATOS -->
-        <h5 class="fw-semibold text-primary mb-3">Detalle de Predicciones y Residuos</h5>
-        <div class="table-responsive">
-          <table class="table table-bordered table-striped table-sm table-hover small">
-            <thead class="bg-light">
-              <tr>
-                <th v-for="(name, index) in result.nombres_variables" :key="index">{{ name }}</th>
-                <th>{{ dependentVariable }} (Y Real)</th>
-                <th class="text-end">Y Estimado (Predicción)</th>
-                <th class="text-end">Residuo (Error)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(point, index) in result.datos_entrada" :key="index">
-                <td v-for="(xValue, xIndex) in point.x" :key="xIndex" class="font-monospace">{{ xValue }}</td>
-                <td class="font-monospace fw-bold">{{ point.y }}</td>
-                <td class="text-end font-monospace">{{ result?.predicciones?.[index] ?? 0 }}</td>
-                <td class="text-end font-monospace"
-                  :class="{ 'text-danger': (result?.residuos?.[index] ?? 0) > 0.5 || (result?.residuos?.[index] ?? 0) < -0.5, 'text-success': (result?.residuos?.[index] ?? 0) < 0.5 && (result?.residuos?.[index] ?? 0) > -0.5 }">
-                  {{ result?.residuos?.[index] ?? 0 }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-if="result" class="card border-0 rounded-0 p-0 p-0 mt-0 card-custom-shadow">
+          <h4 class="fw-bold text-muted mb-4" style="font-size: 13px;">Diagnóstico y Gráficos del Modelo</h4>
+          <div class="row g-4">
+            <div class="col-12 col-lg-6">
+              <div class="card p-3 border-1 h-100">
+                <h6 class="fw-bold mb-3">Residuales vs. Predicciones</h6>
+                <div style="height: 300px;">
+                  <ResidualsScatterPlot :residuos="result.residuos" :predicciones="result.predicciones" v-if="result" />
+                </div>
+                <p class="text-muted small">Muestra si los residuales tienen un patrón (Heterocedasticidad).</p>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+              <div class="card p-3 border-1 h-100">
+                <h6 class="fw-bold mb-3">Histograma de Residuales</h6>
+                <div style="height: 300px;">
+                  <ResidualsHistogram :residuos="result.residuos" v-if="result" />
+                </div>
+                <p class="text-muted small">Verifica si los errores se distribuyen normalmente (media 0).</p>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+              <div class="card p-3 border-1 h-100">
+                <h6 class="fw-bold mb-3">Grafico Cuantil-Cuantil (Q-Q Plot) de Residuales</h6>
+                <div style="height: 300px;">
+                  <ResidualsQQPlot :residuos="result.residuos" v-if="result" />
+                </div>
+                <p class="text-muted small mt-2">La prueba más precisa de normalidad. Los puntos deben caer cerca de la
+                  línea roja para confirmar la distribución normal de los errores.</p>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="card p-3 border-1">
+                <h6 class="fw-bold mb-3">Gráfico de Dispersión: Y vs. {{ result.nombres_variables[0] }}</h6>
+                <div style="height: 400px auto;">
+                  <ScatterRegressionPlot v-if="result && result.nombres_variables.length > 0"
+                    :dataPoints="result.datos_entrada" :xLabel="result.nombres_variables[0] ?? ''"
+                    :yLabel="dependentVariable!" :intercept="result.coeficientes[0] ?? 0"
+                    :coefficient="result.coeficientes[1] ?? 0" />
+                  <p class="text-muted small mt-2">Muestra la relación marginal entre la variable dependiente (Y) y la
+                    <strong>primera</strong> predictora ($X_1$), incluyendo la línea de regresión múltiple proyectada.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLA DE DETALLE DE DATOS -->
+          <p class="fw-semibold text-muted mb-3" style="font-size: 13px; margin-top: 40px;">Detalle de Predicciones y
+            Residuos</p>
+          <div class="table-responsive">
+            <table class="table table-bordered table-striped table-sm table-hover small">
+              <thead class="bg-light">
+                <tr>
+                  <th v-for="(name, index) in result.nombres_variables" :key="index">{{ name }}</th>
+                  <th>{{ dependentVariable }} (Y Real)</th>
+                  <th class="text-end">Y Estimado (Predicción)</th>
+                  <th class="text-end">Residuo (Error)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(point, index) in result.datos_entrada" :key="index">
+                  <td v-for="(xValue, xIndex) in point.x" :key="xIndex" class="font-monospace">{{ xValue }}</td>
+                  <td class="font-monospace fw-bold">{{ point.y }}</td>
+                  <td class="text-end font-monospace">{{ result?.predicciones?.[index] ?? 0 }}</td>
+                  <td class="text-end font-monospace"
+                    :class="{ 'text-danger': (result?.residuos?.[index] ?? 0) > 0.5 || (result?.residuos?.[index] ?? 0) < -0.5, 'text-success': (result?.residuos?.[index] ?? 0) < 0.5 && (result?.residuos?.[index] ?? 0) > -0.5 }">
+                    {{ result?.residuos?.[index] ?? 0 }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

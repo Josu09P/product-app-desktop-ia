@@ -30,6 +30,11 @@ const router = createRouter({
       name: 'rl-multiple',
       component: () => import('@/presentation/views/RLMultipleView.vue'),
     },
+    {
+      path: '/clusters',
+      name: 'clusters',
+      component: () => import('@/presentation/views/ClustersView.vue'),
+    },
   ],
 })
 

@@ -67,7 +67,7 @@ function openIA(service: string) {
         <span class="nav-text">Regresión Lineal Múltiple</span>
       </router-link>
 
-      <router-link to="/dashboard/cluster-analysis" class="nav-link" exact-active-class="nav-active">
+      <router-link to="/clusters" class="nav-link" exact-active-class="nav-active">
         <i class="bi bi-diagram-3-fill"></i>
         <span class="nav-text">Clustering</span>
       </router-link>
@@ -183,9 +183,9 @@ function openIA(service: string) {
 }
 
 .nav-link.nav-active i {
-  background-color: #000000c9;
-  color: white;
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.76);
+  background-color: #00000046;
+  color: rgb(0, 0, 0) !important;
+  box-shadow: 0 0 2px rgba(100, 100, 100, 0.76);
 }
 
 .nav-link i {

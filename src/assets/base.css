@@ -4,8 +4,10 @@
   --color-secondary: #1cc88a;
   --color-success: #28a745;
   --color-danger: #dc3545;
+  --bg-color: #f8f9fc;
   --color-warning: #f6c23e;
   --background-color: white;
   --shadow-color: rgba(49, 49, 49, 0.438);
   --card-bg-color: rgba(240, 240, 240, 0.712);
+  --card-border-color: rgba(200, 200, 200, 0.5);
 }

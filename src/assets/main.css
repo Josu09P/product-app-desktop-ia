@@ -38,4 +38,5 @@ body {
 
 .card-custom-shadow {
   background-color: var(--card-bg-color) !important;
+  border: solid 2px var(--card-border-color) !important;
 }
