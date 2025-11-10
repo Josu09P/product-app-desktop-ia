@@ -2,7 +2,8 @@
 import { ref, computed } from "vue"
 import DashboardLayout from "@/presentation/layouts/DashboardLayout.vue"
 import TitlePage from "../widgets/TitlePage.vue"
-import PostRLMultipleUseCase from "@/domain/usecase/RLMultipleUseCase/PostRLMultipleUseCase"
+// 🚨 CAMBIO CLAVE: Usamos el UseCase de Regresión Simple
+import PostRLSimpleUseCase from "@/domain/usecase/RLSimpleUseCase/PostRLSimpleUseCase"
 import type { RLMultipleResult, DataPoint } from "@/domain/models/RLMultipleModel"
 import { showToast } from '@/utils/toast'
 import ResidualsScatterPlot from "@/presentation/widgets/sections/ResidualsScatterPlot.vue"
@@ -13,91 +14,64 @@ import ScatterRegressionPlot from "../widgets/sections/ScatterRegressionPlot.vue
 // --- ESTADO GLOBAL DE DATOS ---
 const loading = ref(false)
 const result = ref<RLMultipleResult | null>(null)
-
-/** Nombres de todas las columnas disponibles en el CSV (incluyendo encabezados). */
 const availableColumns = ref<string[]>([])
-/** El dataset completo cargado desde el CSV, como array de arrays (filas). */
 const rawDataset = ref<number[][]>([])
 
 // --- ESTADO DE SELECCIÓN DE VARIABLES (Estilo JASP/Jamovi) ---
-/** Nombre de la columna seleccionada como Variable Dependiente (Y). */
 const dependentVariable = ref<string | null>(null)
-/** Nombres de las columnas seleccionadas como Variables Independientes (X's). */
 const independentVariables = ref<string[]>([])
 
 
 // -----------------------------------------------------------
-// --- LÓGICA DE CARGA Y PARSEO DE CSV (REFRACTORIZADO) ---
+// --- LÓGICA DE CARGA Y PARSEO DE CSV (MANTENIDA) ---
 // -----------------------------------------------------------
 
-/**
- * Función robusta para parsear CSV, detectando separadores y parseando números.
- * @param csvText El contenido del archivo CSV como string.
- */
 function parseCSV(csvText: string) {
   const lines = csvText.trim().split('\n').filter(line => line.trim() !== '')
 
-  // La comprobación resuelve los errores de lines[0] y lines[1]
   if (lines.length < 2) {
     showToast('El archivo CSV debe tener encabezados y al menos una fila de datos.', 'error');
-    // Asegurarse de que el input esté limpio si hay un error
     availableColumns.value = [];
     rawDataset.value = [];
     return;
   }
 
-  // 1. Detección de Separador de Columna: Preferimos coma, luego punto y coma.
-  // Usamos el operador de aserción no nula '!' aquí, ya que lines.length >= 2
-  // garantiza que lines[1] y lines[0] existen.
   const firstDataLine = lines[1]!;
   const headerLine = lines[0]!;
 
   let delimiter = ',';
   if (firstDataLine.split(';').length > firstDataLine.split(',').length) {
-    delimiter = ';'; // Usar punto y coma si hay más separaciones con él
+    delimiter = ';';
   }
 
-  // Función para limpiar y convertir un valor a número (VERSION MÁS ROBUSTA)
   const cleanAndParse = (value: string): number | null => {
     let cleaned = value.trim();
 
-    if (cleaned === '') return null; // Ignorar celdas vacías
+    if (cleaned === '') return null;
 
-    // 1. Eliminar cualquier carácter que no sea dígito, punto o coma.
-    // Esto elimina signos de moneda, paréntesis, etc.
     cleaned = cleaned.replace(/[^0-9.,-]/g, '');
 
-    // 2. Manejar separadores decimales: Convertir la coma (si existe) a punto.
-    // Si hay una coma Y un punto, asumimos que el punto es de mil y la coma es decimal (formato europeo).
     if (cleaned.includes(',') && cleaned.includes('.')) {
-      // Eliminar el punto (separador de mil), y luego reemplazar la coma por punto (separador decimal)
       cleaned = cleaned.replace(/\./g, '').replace(/,/g, '.');
     } else if (cleaned.includes(',')) {
-      // Si solo hay coma, asumir que es decimal (formato latino)
       cleaned = cleaned.replace(/,/g, '.');
     }
 
-    // 3. Intentar parsear a flotante
     const num = parseFloat(cleaned);
 
     if (!isNaN(num)) {
       return num;
     }
 
-    // Si la limpieza no funciona (ej. es texto puro), devolver nulo.
     return null;
   };
 
-  // 2. Extraer Encabezados (primera línea)
   const headers = headerLine.split(delimiter).map(h => h.trim());
   availableColumns.value = headers;
 
-  // 3. Procesar Datos (resto de las líneas) - **MODIFICACIÓN AQUÍ**
   const data: number[][] = [];
   let validRows = 0;
 
-  // Identificar las columnas que NO son numéricas y que deben ignorarse en el parseo.
-  // Basado en tu CSV: Fecha, Sucursal, Cuenta, Tipo_Documento, Cliente, Serie_Documento, N_SerieDocumento, Producto, Estado_Venta
   const numericColumns = ['Compro', 'Debe', 'Haber', 'Tipcam'];
   const numericIndices = headers
     .map((name, index) => numericColumns.includes(name) ? index : -1)
@@ -115,35 +89,25 @@ function parseCSV(csvText: string) {
     const numericParts: number[] = [];
     let rowIsValid = true;
 
-    // Convertir CADA PARTE a número. Si es una columna Categórica, la parseamos, pero NO la validamos.
     for (let j = 0; j < parts.length; j++) {
       const part = parts[j];
       let num: number | null = null;
 
-      // SOLO aplicamos cleanAndParse a las columnas que sabemos que deberían ser numéricas.
       if (numericIndices.includes(j)) {
         num = cleanAndParse(part ?? '');
 
-        // Si la columna es numérica (Compro, Debe, Tipcam) y falla el parseo, descartamos la fila.
         if (num === null) {
           rowIsValid = false;
           break;
         }
       }
-      // Si la columna NO es de las numéricas, le asignamos un 0.
-      // ¡IMPORTANTE! Las columnas categóricas que contienen texto deben ser un número para ser guardadas en rawDataset.
-      // Las guardaremos como 0 para mantener la estructura, aunque es una simplificación extrema.
-      // Una mejor práctica es almacenar el rawDataset como (string | number)[][]
 
-      // Alternativa: Si no es una columna numérica, asumimos 0, pero solo si es estrictamente un valor que no necesitamos.
-      // Dado que el 'rawDataset' es 'number[][]', debemos guardar un número en cada posición.
       if (num === null) {
-        num = 0; // Usamos 0 si es categórico o si era numérico pero lo descartamos por arriba (no deberia pasar con el 'break')
+        num = 0;
       }
       numericParts.push(num);
     }
 
-    // Si la fila es válida (todas las columnas numéricas que nos interesan pasaron)
     if (rowIsValid) {
       data.push(numericParts);
       validRows++;
@@ -155,7 +119,7 @@ function parseCSV(csvText: string) {
     showToast(`Archivo cargado: ${headers.length} columnas, ${validRows} filas de datos numéricos válidos.`, 'success');
   } else {
     showToast('Se cargaron encabezados, pero no se encontraron filas con datos numéricos válidos.', 'error');
-    availableColumns.value = []; // Resetear si no hay datos válidos
+    availableColumns.value = [];
   }
 }
 /**
@@ -169,7 +133,7 @@ function handleFileUpload(event: Event) {
 
   if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
     showToast('Por favor, sube un archivo con formato CSV.', 'error');
-    target.value = ''; // Limpiar input file
+    target.value = '';
     return;
   }
 
@@ -177,7 +141,7 @@ function handleFileUpload(event: Event) {
   dependentVariable.value = null;
   independentVariables.value = [];
   rawDataset.value = [];
-  availableColumns.value = []; // Importante resetear las columnas
+  availableColumns.value = [];
 
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -193,7 +157,7 @@ function handleFileUpload(event: Event) {
 }
 
 // -----------------------------------------------------------
-// --- LÓGICA DE PROCESAMIENTO BASADA EN SELECCIÓN ---
+// --- LÓGICA DE PROCESAMIENTO BASADA EN SELECCIÓN (MANTENIDA) ---
 // -----------------------------------------------------------
 
 /**
@@ -201,12 +165,10 @@ function handleFileUpload(event: Event) {
  * que la API necesita.
  */
 const processedDataPoints = computed<DataPoint[]>(() => {
-  // La condición clave para la activación
   if (!dependentVariable.value || independentVariables.value.length === 0 || rawDataset.value.length === 0) {
     return [];
   }
 
-  // Obtener los índices de las columnas seleccionadas
   const allColumns = availableColumns.value;
   const yIndex = allColumns.findIndex(col => col === dependentVariable.value);
   const xIndices = independentVariables.value.map(xName => allColumns.findIndex(col => col === xName));
@@ -218,12 +180,10 @@ const processedDataPoints = computed<DataPoint[]>(() => {
 
   const dataPoints: DataPoint[] = [];
 
-  // Mapear cada fila del dataset a la estructura DataPoint
   rawDataset.value.forEach(row => {
     const yValue = row[yIndex];
     const xValues = xIndices.map(idx => row[idx]);
 
-    // Verificación final (redundante pero segura)
     if (typeof yValue === 'number' && xValues.every(v => typeof v === 'number')) {
       dataPoints.push({ x: xValues, y: yValue });
     }
@@ -242,7 +202,7 @@ const remainingColumns = computed<string[]>(() => {
 
 
 // -----------------------------------------------------------
-// --- LÓGICA DE CONSUMO (Igual que antes, pero usa el nuevo computed) ---
+// --- LÓGICA DE CONSUMO Y RESTRICCIÓN RLS (MODIFICADA) ---
 // -----------------------------------------------------------
 
 async function analizar() {
@@ -253,22 +213,23 @@ async function analizar() {
     return
   }
 
-  if (independentVariables.value.length === 0) {
-    showToast('Debes seleccionar al menos una Variable Independiente (X).', 'error');
+  // 🚨 RESTRICCIÓN CLAVE RLS: Solo una variable X
+  if (independentVariables.value.length !== 1) {
+    showToast('La Regresión Lineal Simple requiere seleccionar exactamente una Variable Independiente (X).', 'error');
     return
   }
 
   loading.value = true
   result.value = null
 
-  // Usamos los nombres de las variables X seleccionadas
-  const data = await PostRLMultipleUseCase.ejecutar(dataPoints, independentVariables.value)
+  // Usamos el UseCase de RLS
+  const data = await PostRLSimpleUseCase.ejecutar(dataPoints, independentVariables.value)
   if (data) result.value = data
 
   loading.value = false
 }
 
-// Lógica para mover variables entre las listas (similar a JASP/Jamovi)
+// Lógica para mover variables entre las listas (Estilo JASP/Jamovi)
 
 function moveToDependent(variable: string) {
   dependentVariable.value = variable;
@@ -277,6 +238,12 @@ function moveToDependent(variable: string) {
 }
 
 function addToIndependent(variable: string) {
+  // 🚨 RESTRICCIÓN DE LA VISTA: Bloquear si ya hay una X seleccionada
+  if (independentVariables.value.length >= 1) {
+    showToast('La Regresión Lineal Simple solo permite una variable X. Elimine la actual si desea cambiarla.', 'error');
+    return;
+  }
+
   if (variable && !independentVariables.value.includes(variable)) {
     independentVariables.value.push(variable);
   }
@@ -295,20 +262,17 @@ function removeFromIndependent(variable: string) {
   <DashboardLayout>
     <div class="container pt-4 pb-5">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-5">
-        <TitlePage title="Regresión Lineal Múltiple" size="medium" class="flex-shrink-0 mb-0" />
+        <TitlePage title="Regresión Lineal Simple" size="medium" class="flex-shrink-0 mb-0" />
 
-        <!-- BOTÓN DE ANÁLISIS -->
         <button class="btn btn-primary px-4 fw-bold shadow-sm" @click="analizar"
-          :disabled="loading || processedDataPoints.length < 3">
+          :disabled="loading || processedDataPoints.length < 3 || independentVariables.length !== 1">
           {{ loading ? 'Calculando...' : 'Ejecutar' }}
         </button>
       </div>
 
-      <!-- SECCIÓN DE CONFIGURACIÓN Y DATOS DE ENTRADA -->
       <div class="card border-1 rounded-4 p-lg-5 p-4 mt-4 card-custom-shadow">
         <h4 class="fw-bold text-dark mb-4">Carga y Configuración de Variables</h4>
 
-        <!-- Carga de Archivo CSV -->
         <div class="mb-5">
           <p class="text-muted mb-3 fw-bold" style="font-size: 13px;">Paso 1: Importar Data (.csv)</p>
           <input type="file" @change="handleFileUpload" class="form-control" accept=".csv, text/csv" />
@@ -321,11 +285,9 @@ function removeFromIndependent(variable: string) {
           </p>
         </div>
 
-        <!-- Panel de Selección de Variables (Estilo JASP/Jamovi) -->
         <div v-if="availableColumns.length > 0" class="row g-4 align-items-stretch">
           <p class="text-muted mt-3 fw-bold mb-1" style="font-size: 13px;">Paso 2: Seleccionar Variables</p>
 
-          <!-- Lista de Variables Disponibles -->
           <div class="col-12 col-lg-4">
             <div class="card h-100 p-3 border-1">
               <p class="fw-bold text-secondary mb-3">Variables Disponibles: {{ remainingColumns.length }}</p>
@@ -337,18 +299,17 @@ function removeFromIndependent(variable: string) {
                     <button @click="moveToDependent(col)" class="btn btn-sm btn-outline-info me-1"
                       style="border-radius: 1.5rem;" title="Mover a Dependiente">Y</button>
                     <button @click="addToIndependent(col)" class="btn btn-sm btn-outline-success"
-                      style="border-radius: 1.5rem;" title="Mover a Independientes">X</button>
+                      :disabled="independentVariables.length >= 1" style="border-radius: 1.5rem;"
+                      title="Mover a Independientes">X</button>
                   </div>
                 </li>
               </ul>
             </div>
           </div>
 
-          <!-- Columna de Variables Seleccionadas -->
           <div class="col-12 col-lg-8">
             <div class="d-flex flex-column h-100">
 
-              <!-- Variable Dependiente (Y) -->
               <div class="card mb-3 p-3 border-1">
                 <h6 class="fw-bold text-info mb-2">Variable Dependiente - Y</h6>
                 <div v-if="dependentVariable"
@@ -360,10 +321,8 @@ function removeFromIndependent(variable: string) {
                 <p v-else class="text-muted small mb-0">Selecciona una variable</p>
               </div>
 
-              <!-- Variables Independientes (X) -->
               <div class="card flex-grow-1 p-3 border-1">
-                <h6 class="fw-bold text-success mb-2">Variables Independientes - X - {{ independentVariables.length }}
-                </h6>
+                <h6 class="fw-bold text-success mb-2">Variable Independiente - X (1 Requerida)</h6>
                 <ul v-if="independentVariables.length > 0" class="list-group list-group-flush">
                   <li v-for="col in independentVariables" :key="col"
                     class="list-group-item d-flex justify-content-between align-items-center p-2">
@@ -372,46 +331,41 @@ function removeFromIndependent(variable: string) {
                       style="border-radius: 1.5rem;"><i class="bi bi-trash"></i></button>
                   </li>
                 </ul>
-                <p v-else class="text-muted small mb-0">Selecciona las variables</p>
+                <p v-else class="text-muted small mb-0">Selecciona la variable predictora X</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Muestra el número de datos procesados -->
         <p v-if="availableColumns.length > 0" class="mt-4 small text-end text-muted">
           <strong>{{ processedDataPoints.length }}</strong> puntos de datos listos para el análisis.
         </p>
 
       </div>
 
-      <!-- ESTADO DE CARGA Y RESULTADOS (Se mantienen) -->
       <div v-if="loading" class="text-center py-5">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Cargando...</span>
         </div>
-        <p class="mt-2 text-muted">Calculando el modelo de regresión...</p>
+        <p class="mt-2 text-muted">Calculando el modelo de regresión simple...</p>
       </div>
 
       <div v-if="result" class="card border-1 rounded-4 p-lg-5 p-4 mt-4 card-custom-shadow">
-        <h4 class="fw-bold mb-4">Resultados del Análisis</h4>
+        <h4 class="fw-bold mb-4">Resultados del Análisis de Regresión Simple</h4>
 
-        <!-- RESUMEN CLAVE -->
         <div class="row mb-5 g-4">
 
-          <!-- Ecuación -->
           <div class="col-12 col-lg-8">
             <div class="card bg-light border-1 p-4 h-100">
               <p class="card-title text-muted fw-bold" style="font-size: 13px;">Ecuación de Regresión Estimada</p>
               <p class="card-text fs-5 font-monospace text-dark">{{ result.ecuacion }}</p>
               <p class="small text-muted mt-2">
-                La ecuación permite predecir la variable Y <strong>{{ dependentVariable }}</strong>
-                en función de las variables X ingresadas.
+                Ecuación: $Y = B_0 + B_1 * X$. Permite predecir la variable Y <strong>{{ dependentVariable }}</strong>
+                en función de <strong>{{ independentVariables[0] }}</strong>.
               </p>
             </div>
           </div>
 
-          <!-- R-Cuadrado -->
           <div class="col-12 col-lg-4">
             <div class="card border-1 bg-info bg-opacity-10 p-4 text-center h-100 d-flex justify-content-center">
               <h5 class="card-title text-info fw-bold mb-0">R-Cuadrado (R²)</h5>
@@ -424,10 +378,8 @@ function removeFromIndependent(variable: string) {
           </div>
         </div>
 
-        <!-- TABLA DE COEFICIENTES -->
         <p class="fw-semibold text-muted mb-3" style="font-size: 13px;">Tabla de Coeficientes</p>
         <div class="table-responsive mb-5">
-          <!-- ... (Resto de la tabla de coeficientes se mantiene, pero usa result.nombres_variables) ... -->
           <table class="table table-bordered table-striped table-hover small">
             <thead class="bg-light">
               <tr>
@@ -451,6 +403,20 @@ function removeFromIndependent(variable: string) {
         <div v-if="result" class="card border-0 rounded-0 p-0 p-0 mt-0 card-custom-shadow">
           <h4 class="fw-bold text-muted mb-4" style="font-size: 13px;">Diagnóstico y Gráficos del Modelo</h4>
           <div class="row g-4">
+
+            <div class="col-12">
+              <div class="card p-3 border-1">
+                <h6 class="fw-bold mb-3">Gráfico de Dispersión y Línea de Regresión</h6>
+                <div style="height: 400px;">
+                  <ScatterRegressionPlot v-if="result.nombres_variables.length === 1" :dataPoints="result.datos_entrada"
+                    :xLabel="result.nombres_variables[0] ?? ''" :yLabel="dependentVariable!"
+                    :intercept="result.coeficientes[0] ?? 0" :coefficient="result.coeficientes[1] ?? 0" />
+                </div>
+                <p class="text-muted small mt-2">Muestra la relación entre la Variable Dependiente (Y) y la única
+                  Variable Predictora (X), incluyendo la línea de regresión simple estimada.</p>
+              </div>
+            </div>
+
             <div class="col-12 col-lg-6">
               <div class="card p-3 border-1 h-100">
                 <h6 class="fw-bold mb-3">Residuales vs. Predicciones</h6>
@@ -482,30 +448,15 @@ function removeFromIndependent(variable: string) {
               </div>
             </div>
 
-            <div class="col-12">
-              <div class="card p-3 border-1">
-                <h6 class="fw-bold mb-3">Gráfico de Dispersión: Y vs. {{ result.nombres_variables[0] }}</h6>
-                <div style="height: 400px auto;">
-                  <ScatterRegressionPlot v-if="result && result.nombres_variables.length > 0"
-                    :dataPoints="result.datos_entrada" :xLabel="result.nombres_variables[0] ?? ''"
-                    :yLabel="dependentVariable!" :intercept="result.coeficientes[0] ?? 0"
-                    :coefficient="result.coeficientes[1] ?? 0" />
-                  <p class="text-muted small mt-2">Muestra la relación marginal entre la variable dependiente (Y) y la
-                    <strong>primera</strong> predictora ($X_1$), incluyendo la línea de regresión múltiple proyectada.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <!-- TABLA DE DETALLE DE DATOS -->
           <p class="fw-semibold text-muted mb-3" style="font-size: 13px; margin-top: 40px;">Detalle de Predicciones y
             Residuos</p>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-sm table-hover small">
               <thead class="bg-light">
                 <tr>
-                  <th v-for="(name, index) in result.nombres_variables" :key="index">{{ name }}</th>
+                  <th v-for="(name, index) in result.nombres_variables" :key="index">{{ name }} (X)</th>
                   <th>{{ dependentVariable }} (Y Real)</th>
                   <th class="text-end">Y Estimado (Predicción)</th>
                   <th class="text-end">Residuo (Error)</th>
@@ -515,10 +466,10 @@ function removeFromIndependent(variable: string) {
                 <tr v-for="(point, index) in result.datos_entrada" :key="index">
                   <td v-for="(xValue, xIndex) in point.x" :key="xIndex" class="font-monospace">{{ xValue }}</td>
                   <td class="font-monospace fw-bold">{{ point.y }}</td>
-                  <td class="text-end font-monospace">{{ result?.predicciones?.[index] ?? 0 }}</td>
+                  <td class="text-end font-monospace">{{ result?.predicciones?.[index]?.toFixed(4) ?? 0 }}</td>
                   <td class="text-end font-monospace"
                     :class="{ 'text-danger': (result?.residuos?.[index] ?? 0) > 0.5 || (result?.residuos?.[index] ?? 0) < -0.5, 'text-success': (result?.residuos?.[index] ?? 0) < 0.5 && (result?.residuos?.[index] ?? 0) > -0.5 }">
-                    {{ result?.residuos?.[index] ?? 0 }}
+                    {{ result?.residuos?.[index]?.toFixed(4) ?? 0 }}
                   </td>
                 </tr>
               </tbody>

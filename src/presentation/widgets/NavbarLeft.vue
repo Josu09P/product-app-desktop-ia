@@ -57,7 +57,7 @@ function openIA(service: string) {
         <span class="nav-text">Análisis de Sentimientos</span>
       </router-link>
 
-      <router-link to="/dash-dash" class="nav-link" exact-active-class="nav-active">
+      <router-link to="/rl-simple" class="nav-link" exact-active-class="nav-active">
         <i class="bi bi-graph-up"></i>
         <span class="nav-text">Regresión Lineal Simple</span>
       </router-link>
