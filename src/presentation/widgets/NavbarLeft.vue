@@ -47,7 +47,7 @@ function openIA(service: string) {
 
     <!-- Navegación -->
     <div class="nav-center w-100">
-      <router-link to="/" class="nav-link" exact-active-class="nav-active">
+      <router-link to="/home" class="nav-link" exact-active-class="nav-active">
         <i class="bi bi-house-door-fill"></i>
         <span class="nav-text">Inicio</span>
       </router-link>

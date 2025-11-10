@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/presentation/views/HomeView.vue'
 import AuthLoginPage from '@/presentation/security/auth/LoginPage.vue'
+import RegisterPage from '@/presentation/security/auth/RegisterPage.vue'
 import SentimientosView from '@/presentation/views/SentimientosView.vue'
 import RLMultipleView from '@/presentation/views/RLMultipleView.vue'
 import ClustersView from '@/presentation/views/ClustersView.vue'
 import RLSimpleView from '@/presentation/views/RLSimpleView.vue'
 
-// Extiende el tipo RouteMeta para incluir la propiedad keepAlive
 declare module 'vue-router' {
   interface RouteMeta {
     keepAlive?: boolean
@@ -18,8 +18,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      redirect: '/auth/login',
     },
     {
       path: '/auth',
@@ -29,7 +28,17 @@ const router = createRouter({
           name: 'login',
           component: AuthLoginPage,
         },
+        {
+          path: 'register',
+          name: 'register',
+          component: RegisterPage,
+        },
       ],
+    },
+    {
+      path: '/home',
+      name: 'home',
+      component: HomeView,
     },
     {
       path: '/sentimientos',
@@ -53,6 +62,11 @@ const router = createRouter({
       path: '/clusters',
       name: 'clusters',
       component: ClustersView,
+    },
+    // 🚫 Manejo de rutas no encontradas
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/auth/login',
     },
   ],
 })

@@ -20,7 +20,6 @@ export default class RLMultipleService {
         nombres_variables: variables,
       }
 
-      // Construcción de la URL usando ApiConection.BASE_URL
       const response = await fetch(`${ApiConection.BASE_URL}/rl-multiple/analizar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,24 +28,21 @@ export default class RLMultipleService {
 
       if (!response.ok) {
         const responseData = await response.json()
-        // Lanza el error capturado del backend, si existe
         throw new Error(
           responseData.error || `Error ${response.status}: Error al procesar la regresión.`,
         )
       }
 
-      // Si la respuesta es exitosa (200 OK), devolvemos los resultados.
       return await response.json()
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('[RLMultipleService Error]:', error)
-      // Propagamos el error para que sea capturado por el UseCase
+
       throw new Error(error.message || 'Error de red o fallo de la API.')
     }
   }
 
-  // Ejemplo de un método estático de verificación de salud, siguiendo el patrón.
   static async checkHealth(): Promise<boolean> {
     try {
       const response = await fetch(`${ApiConection.BASE_URL}/health`)

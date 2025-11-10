@@ -18,7 +18,6 @@ export default class KMeansService {
       })
 
       if (!response.ok) {
-        // Asumiendo que el backend devuelve {error: "..."} en caso de fallo
         const errorData = await response.json()
         throw new Error(errorData.error || `Error ${response.status}: Error al entrenar el modelo.`)
       }
@@ -26,10 +25,7 @@ export default class KMeansService {
       return (await response.json()) as KMeansResult
     } catch (error) {
       console.error('Error en el servicio KMeansService.train:', error)
-      throw error // Propagar el error para ser manejado por el UseCase y la vista
+      throw error
     }
   }
-
-  // Puedes añadir aquí un método 'predict' si lo necesitas:
-  // public static async predict(samples: ClusterDataPoint[]): Promise<number[] | null> { ... }
 }

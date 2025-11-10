@@ -3,7 +3,6 @@ import type { DataPoint, RLMultipleResult } from '@/domain/models/RLMultipleMode
 
 export default class RLSimpleService {
   static async postAnalisis(data: DataPoint[], variables: string[]): Promise<RLMultipleResult> {
-    // Solo validación de longitud mínima (X=1 se valida en el UseCase)
     if (data.length < 3) {
       throw new Error('Se requieren al menos 3 puntos de datos para la regresión.')
     }
@@ -14,7 +13,6 @@ export default class RLSimpleService {
         nombres_variables: variables,
       }
 
-      // CAMBIO DE URL: RLM -> RLS
       const response = await fetch(`${ApiConection.BASE_URL}/rl-simple/analizar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
