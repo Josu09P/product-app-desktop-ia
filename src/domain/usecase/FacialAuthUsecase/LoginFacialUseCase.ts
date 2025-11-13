@@ -14,11 +14,15 @@ export default class LoginFacialUseCase {
       const result = await FacialAuthService.loginFacial(request)
 
       if (result.success) {
-        showToast('✅ Autenticación facial exitosa. ¡Bienvenido!', 'success')
-        // Guardar token en localStorage o store
-        if (result.token) {
-          localStorage.setItem('auth_token', result.token)
-          localStorage.setItem('user_id', result.user_id || '')
+        showToast('Autenticación facial exitosa. ¡Bienvenido!', 'success')
+
+        if (result.token && result.user_id) {
+          const authData = {
+            token: result.token,
+            user_id: result.user_id,
+            timestamp: new Date().toISOString(),
+          }
+          localStorage.setItem('auth_data_aquamind', JSON.stringify(authData))
         }
       } else {
         showToast(result.message, 'error')

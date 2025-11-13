@@ -1,6 +1,22 @@
 @import './base.css';
 @import url('https://fonts.googleapis.com/css2?family=Elms+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 
+html,
+body {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+body {
+  scrollbar-width: none;
+  overflow-y: scroll; /* PERMITIR SCROLL EN EJE Y */
+  -ms-overflow-style: none;
+}
+
 /* =========================================
   CSS FOR BODY
 ========================================== */
@@ -12,6 +28,18 @@ body {
   font-optical-sizing: auto !important;
   font-style: normal;
   transition: background 0.3s, color 0.3s;
+}
+
+/* =========================================
+    SWEETALERT DESING BLUR
+========================================= */
+.swal2-popup.glass-modal {
+  background: rgba(255, 255, 255, 0.418);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 3pxpx rgba(61, 61, 61, 0.4);
 }
 
 /* =========================================

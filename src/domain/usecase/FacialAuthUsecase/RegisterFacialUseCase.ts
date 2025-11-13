@@ -17,7 +17,7 @@ export default class RegisterFacialUseCase {
       const result = await FacialAuthService.registerFacialId(request)
 
       if (result.success) {
-        showToast('✅ Registro facial completado.', 'success')
+        showToast('Registro facial completado.', 'success')
       } else {
         // Esto debería ser capturado por el catch si el backend retorna !response.ok, pero es un fallback
         showToast(result.message, 'error')
