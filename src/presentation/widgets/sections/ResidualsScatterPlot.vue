@@ -2,7 +2,7 @@
 import { Scatter } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LinearScale, PointElement, LineElement, CategoryScale } from 'chart.js'
 import type { ChartData, Point } from 'chart.js'
-import { computed } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue'; // ✅ Importaciones añadidas
 
 // 1. Registra los elementos necesarios de Chart.js
 ChartJS.register(Title, Tooltip, Legend, LinearScale, PointElement, LineElement, CategoryScale)
@@ -15,9 +15,13 @@ const props = defineProps<{
   predicciones: number[]
 }>()
 
+// --- SOLUCIÓN: KEY para forzar la re-renderización ---
+const chartKey = ref(0);
+// -----------------------------------------------------
+
 // 3. Formatear los datos para Chart.js
 const chartData = computed<ChartData<'scatter', Point[]>>(() => {
-  // Chart.js espera un array de objetos {x: value, y: value} para los scatter plots
+  // ... (Lógica de dataPoints y min/max se mantiene igual) ...
   const dataPoints = props.residuos.map((residuo, index) => ({
     x: props.predicciones[index] ?? null,
     y: residuo,
@@ -34,7 +38,7 @@ const chartData = computed<ChartData<'scatter', Point[]>>(() => {
         backgroundColor: '#0d6efd', // Azul de Bootstrap
         pointRadius: 3, // Tamaño de los puntos
       },
-      // Añadir una línea en y=0 para el diagnóstico (idealmente los puntos deben ser aleatorios alrededor de esta línea)
+      // Añadir una línea en y=0 para el diagnóstico
       {
         label: 'Línea de Referencia (e=0)',
         data: [{ x: xMin, y: 0 }, { x: xMax, y: 0 }],
@@ -50,6 +54,7 @@ const chartData = computed<ChartData<'scatter', Point[]>>(() => {
 
 // 4. Configuración de las opciones del gráfico
 const chartOptions = {
+  // ... (Options se mantiene igual) ...
   responsive: true,
   maintainAspectRatio: false,
   scales: {
@@ -72,8 +77,24 @@ const chartOptions = {
     }
   }
 }
+
+// --- Lógica para forzar la actualización ---
+
+// Forzar el re-renderizado al montar y cuando cambian los datos
+onMounted(() => {
+    chartKey.value++;
+});
+
+watch(
+    () => [props.residuos, props.predicciones],
+    () => {
+        chartKey.value++;
+    },
+    { deep: true }
+);
+
 </script>
 
 <template>
-  <Scatter :data="chartData" :options="chartOptions" />
+  <Scatter :key="chartKey" :data="chartData" :options="chartOptions" />
 </template>

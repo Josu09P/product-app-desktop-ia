@@ -2,7 +2,7 @@
 import { Scatter } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LinearScale, PointElement, LineElement } from 'chart.js'
 import type { ChartData, Point, ChartDataset } from 'chart.js'
-import { computed } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue'; // ✅ Importaciones añadidas
 import type { DataPoint } from "@/domain/models/RLMultipleModel"
 
 // 1. Registrar los elementos necesarios para un gráfico de dispersión con línea
@@ -22,8 +22,13 @@ const props = defineProps<{
   coefficient: number
 }>()
 
+// --- SOLUCIÓN: KEY para forzar la re-renderización ---
+const chartKey = ref(0);
+// -----------------------------------------------------
+
 // 3. Formatear los datos para Chart.js
 const chartData = computed((): ChartData<'scatter', Point[]> => {
+  // ... (Toda la lógica de cálculo de data y lineData se mantiene igual) ...
   if (!props.dataPoints || props.dataPoints.length === 0) return { datasets: [] };
 
   // Construir puntos asegurando que x e y sean números (no undefined)
@@ -67,6 +72,7 @@ const chartData = computed((): ChartData<'scatter', Point[]> => {
 
 // 4. Configuración de las opciones del gráfico
 const chartOptions = {
+  // ... (Options se mantiene igual) ...
   responsive: true,
   maintainAspectRatio: false,
   scales: {
@@ -89,10 +95,26 @@ const chartOptions = {
     }
   }
 }
+
+// --- Lógica para forzar la actualización ---
+
+// Forzar el re-renderizado al montar y cuando cambian los datos
+onMounted(() => {
+    chartKey.value++;
+});
+
+watch(
+    () => [props.dataPoints, props.intercept, props.coefficient],
+    () => {
+        chartKey.value++;
+    },
+    { deep: true }
+);
+
 </script>
 
 <template>
   <div class="h-100">
-    <Scatter :data="chartData" :options="chartOptions" />
+    <Scatter :key="chartKey" :data="chartData" :options="chartOptions" />
   </div>
 </template>

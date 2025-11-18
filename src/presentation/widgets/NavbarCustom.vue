@@ -5,7 +5,7 @@
         </div>
 
         <div class="right-section">
-            <button class="window-btn" title="Minimizar" @click="minimizeWindow">
+           <!-- <button class="window-btn" title="Minimizar" @click="minimizeWindow">
                 <i class="bi bi-dash" style="font-size: 16px; margin-top: 10px !important;"></i>
             </button>
             <button class="window-btn" title="Maximizar/Restaurar" @click="toggleMaximize">
@@ -13,13 +13,13 @@
             </button>
             <button class="window-btn close" title="Cerrar" @click="closeWindow">
                 <i class="bi bi-x-lg" style="font-size: 12px;"></i>
-            </button>
+            </button>-->
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-// 🔧 ACCEDER CORRECTAMENTE A LA API
+/* 🔧 ACCEDER CORRECTAMENTE A LA API
 function minimizeWindow() {
     if (window.electronAPI?.windowControls) {
         window.electronAPI.windowControls.minimize()
@@ -43,6 +43,8 @@ function closeWindow() {
         console.warn('Electron API no disponible')
     }
 }
+
+*/
 </script>
 
 <style scoped>
